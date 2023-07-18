@@ -50,6 +50,10 @@ var config = {
         resourceName: 'computeDeployment-${resourceNameSuffix}-${utcDeployment}'
         resourceGroupName: empty(computeResourceGroupName) ? resourceGroup().name : computeResourceGroupName
     }
+    monitoringDeployment: {
+        resourceName: 'monitoringDeployment-${resourceNameSuffix}-${utcDeployment}'
+        resourceGroupName: empty(managementResourceGroupName) ? resourceGroup().name : managementResourceGroupName
+    }
 }
 // Key Vault with secrets
 resource keyVaultSecrets 'Microsoft.KeyVault/vaults@2023-02-01' existing = {
@@ -139,6 +143,16 @@ module vm 'modules/jumpBoxVm.bicep' = if (isProductionEnvironment) {
         adminPassword: keyVaultSecrets.getSecret(jumpBoxVmAdminPasswordSecretName)
         subnetId: network.outputs.subnetBastionId
         nsgId: network.outputs.nsgId
+    }
+}
+// Monitoring
+module vm 'modules/monitoring.bicep' = if (isProductionEnvironment) {
+    name: config.monitoringDeployment.resourceName
+    scope: resourceGroup(config.monitoringDeployment.resourceGroupName)
+    params: {
+        resourceNameSuffix: resourceNameSuffix
+        isProductionEnvironment: isProductionEnvironment
+        location: location
     }
 }
 /*
